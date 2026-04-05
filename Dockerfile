@@ -1,15 +1,15 @@
-FROM hashicorp/vault:1.19
+FROM hashicorp/vault:1.21
 
 ARG STORAGE_PATH
 ARG DEFAULT_LEASE_TTL
 ARG MAX_LEASE_TTL
 ARG UI_ENABLED
-ARG ENV=dev
-ARG DEV_ROOT_TOKEN_ID
+ENV ENV=dev
 
 COPY config.sh /config.sh
+COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /config.sh && \
+RUN chmod +x /config.sh /entrypoint.sh && \
     export STORAGE_PATH=${STORAGE_PATH} && \
     export DEFAULT_LEASE_TTL=${DEFAULT_LEASE_TTL} && \
     export MAX_LEASE_TTL=${MAX_LEASE_TTL} && \
@@ -18,10 +18,4 @@ RUN chmod +x /config.sh && \
 
 RUN mv ./config.json /vault/config/config.json
 
-CMD if [ "$ENV" = "dev" ]; then \
-    VAULT_DEV_LISTEN_ADDRESS="[::]:8200" \
-    VAULT_DEV_ROOT_TOKEN_ID=${DEV_ROOT_TOKEN_ID} \
-    vault server --dev; \
-    else \
-    vault server -config=/vault/config/config.json; \
-    fi
+ENTRYPOINT ["/entrypoint.sh"]

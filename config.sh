@@ -5,6 +5,7 @@ echo "
   \"default_lease_ttl\": \"${DEFAULT_LEASE_TTL}\",
   \"max_lease_ttl\": \"${MAX_LEASE_TTL}\",
   \"ui\": ${UI_ENABLED},
-  \"disable_mlock\": true
+  \"disable_mlock\": true,
+  \"api_addr\": \"http://0.0.0.0:${PORT}\"
 }
 " > config.json

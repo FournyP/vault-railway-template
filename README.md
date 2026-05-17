@@ -36,5 +36,5 @@ If you need stronger guarantees (regulated workloads, high-value secrets), do no
 
 ## 📝 Notes
 
-- Source repo: https://github.com/EzeXchange-API/vault-railway-template
+- Source repo: https://github.com/FournyP/vault-railway-template
 - Docs: https://developer.hashicorp.com/vault/docs

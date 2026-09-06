@@ -20,16 +20,16 @@ Running in development mode (`ENV=dev`) uses in-memory storage. **Redeploying or
 
 To avoid data loss, use [medusa](https://github.com/jonasvinther/medusa) to export your secrets before upgrading and re-import them afterward.
 
-## ⬆️ Upgrading to Vault 2.x
+## ⬆️ Upgrading
 
-Railway template updates are opt-in — an existing deployment keeps running until you apply the update.
+Railway template updates are opt-in — an existing deployment keeps running until you apply the update. See the [changelog](CHANGELOG.md) for what each update contains.
 
-If you use a volume (any `ENV` other than `dev`), before applying it:
+If you use a volume (any `ENV` other than `dev`), before applying an update:
 
-- **Back up your data** with Railway volume backups or [medusa](https://github.com/jonasvinther/medusa) — Vault does not support downgrading.
-- **Unseal after the redeploy** with your existing keys; the upgrade does not change them.
+- **Back up your data** with Railway volume backups or [medusa](https://github.com/jonasvinther/medusa) — Vault does not support downgrading, so an upgrade cannot be rolled back.
+- **Unseal after the redeploy** with your existing keys; upgrades do not change them.
 
-Volume ownership is migrated automatically on first boot (Vault 2.x runs as a non-root user, Railway mounts volumes as root), so no variable changes are needed. Two 2.0 changes can affect API clients: `sys/rekey` and `sys/generate-root` now also require a token, and non-canonical paths (`/../`, `/./`, `//`) are rejected — see the [important changes](https://developer.hashicorp.com/vault/docs/updates/important-changes).
+Volume ownership is handled for you on first boot. Vault runs as a non-root user while Railway mounts volumes as root, so the entrypoint takes ownership of the storage path before starting Vault — no variable changes are needed.
 
 ## 🔐 Security note: `disable_mlock` is enabled
 

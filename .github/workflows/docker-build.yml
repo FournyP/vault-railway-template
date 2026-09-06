@@ -1,0 +1,104 @@
+# Builds the Vault image on every PR and on main, and boots it in dev mode to
+# check that the entrypoint and the generated config actually start a server.
+name: docker-build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build vault
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # STORAGE_PATH and friends have no ARG defaults, and config.sh does not
+          # validate them: without these the build succeeds but bakes invalid
+          # JSON and Vault cannot start. The boot job asserts that separately.
+          build-args: |
+            STORAGE_PATH=/vault/file
+            DEFAULT_LEASE_TTL=168h
+            MAX_LEASE_TTL=720h
+            UI_ENABLED=true
+            PORT=8200
+          push: false
+          load: false
+          cache-from: type=gha,scope=vault
+          cache-to: type=gha,mode=max,scope=vault
+
+  # config.sh generates /vault/config/config.json at build time from the build
+  # args, and entrypoint.sh picks a mode at container start. Neither is covered
+  # by the image build succeeding, so boot the real image both ways.
+  boot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build vault image locally
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: vault:ci
+          build-args: |
+            STORAGE_PATH=/vault/file
+            DEFAULT_LEASE_TTL=168h
+            MAX_LEASE_TTL=720h
+            UI_ENABLED=true
+            PORT=8200
+          cache-from: type=gha,scope=vault
+
+      - name: Generated config is valid JSON
+        run: |
+          docker run --rm --entrypoint sh vault:ci -c 'cat /vault/config/config.json' \
+            | python3 -m json.tool > /dev/null
+
+      - name: Dev mode serves an unsealed Vault
+        run: |
+          set -eu
+          docker run -d --name vault-dev \
+            -e ENV=dev \
+            -e DEV_ROOT_TOKEN_ID=ci-root-token \
+            -e PORT=8200 \
+            -p 8200:8200 vault:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8200/v1/sys/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://localhost:8200/v1/sys/health | grep -q '"sealed":false'
+
+      - name: File mode starts sealed and owns its storage path
+        run: |
+          set -eu
+          # The listener port is baked into config.json at build time (PORT=8200
+          # above), so file mode always listens on 8200 inside the container —
+          # a runtime PORT does not move it.
+          docker run -d --name vault-file \
+            -e ENV=file \
+            -p 8201:8200 vault:ci
+          # 501 is Vault's "not initialised" status — the server is up, which is
+          # all this asserts. An uninitialised Vault is expected here.
+          for i in $(seq 1 30); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8201/v1/sys/health)" != 000 ] && break
+            sleep 1
+          done
+          [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8201/v1/sys/health)" = 501 ]
+
+          echo "the data directory belongs to the vault user, not root"
+          docker exec vault-file sh -c '[ "$(stat -c %U /vault/file)" = vault ]'
+
+      - name: Vault logs on failure
+        if: failure()
+        run: |
+          docker logs vault-dev || true
+          docker logs vault-file || true

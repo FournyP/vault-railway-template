@@ -5,6 +5,17 @@ and the format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Before applying an update to a deployment that uses a volume, read [Upgrading](README.md#️-upgrading).
 
+## Infrastructure as Code — 2026-09-06
+
+### Added
+
+- `.railway/railway.ts`, an Infrastructure as Code definition of the project. See
+  [Infrastructure as Code](README.md#-infrastructure-as-code).
+- CI: `docker-build` builds the image and boots it both ways, `iac-typecheck`
+  typechecks `railway.ts`.
+- The storage volume is declared with the service, so an apply cannot start a
+  file-backed Vault with nowhere to persist.
+
 ## Vault 2.1 — 2026-09-06
 
 ### Changed

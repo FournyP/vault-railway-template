@@ -14,6 +14,37 @@ This example deploys a server of [Hashicorp Vault](https://www.hashicorp.com/pro
 - Fill in the variables
 - Deploy! 🚄
 
+## 🧱 Infrastructure as Code
+
+`.railway/railway.ts` defines the whole project — the server, its storage volume and
+every variable.
+
+```bash
+railway link
+npm install
+
+# Dev mode only, and first apply only; later runs omit this and preserve() keeps it.
+export DEV_ROOT_TOKEN_ID=$(openssl rand -hex 16)
+
+npm run plan     # read the diff before applying
+npm run apply
+railway domain --service vault
+```
+
+`ENV` is `file`, which persists to the volume. Setting it to `dev` moves Vault to in-memory
+storage and loses every secret on the next redeploy.
+
+Detaching the volume or shrinking it is destructive; the CLI asks first. Back up before
+either — Vault has no downgrade.
+
+Needs the Railway CLI 5.42.1 or newer: the IaC engine ships in the CLI, not in the npm
+package. If you forked this repo, change `REPO` in `railway.ts` to your own before applying.
+
+Link it to a project dedicated to this template. An apply deletes every resource **and
+every variable** the file does not declare, so from then on variables live in `railway.ts`,
+not the dashboard. Do not point it at a project created from the deploy button — the
+service names differ, and a mismatch is a delete and recreate, not a rename.
+
 ## ⚠️ Development mode
 
 Running in development mode (`ENV=dev`) uses in-memory storage. **Redeploying or upgrading the Vault version will erase all data.**

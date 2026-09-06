@@ -1,4 +1,8 @@
-FROM hashicorp/vault:1.21
+FROM hashicorp/vault:2.1
+
+# The official Vault 2.x images end with `USER vault`. The build steps below
+# need root, and the entrypoint drops privileges itself at runtime.
+USER root
 
 ARG STORAGE_PATH
 ARG DEFAULT_LEASE_TTL
@@ -6,6 +10,7 @@ ARG MAX_LEASE_TTL
 ARG UI_ENABLED
 ARG PORT=8200
 ENV ENV=dev
+ENV STORAGE_PATH=${STORAGE_PATH}
 
 COPY config.sh /config.sh
 COPY entrypoint.sh /entrypoint.sh

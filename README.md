@@ -1,18 +1,34 @@
-# Hashicorp Vault example
+# HashiCorp Vault Railway Template
 
-This example deploys a server of [Hashicorp Vault](https://www.hashicorp.com/products/vault).
+Deploys [HashiCorp Vault](https://developer.hashicorp.com/vault) — secrets management, encryption as a service and identity-based access — on Railway with a persistent volume for the file storage backend.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/vOXRB-?referralCode=C3Uv6n&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
+## 🏗️ Architecture
+
+```
+client ──HTTP :8200──► vault (public domain)
+                          │
+                          ▼
+                    vault-data volume (/vault/file)
+```
+
+One Railway service, `vault`, built from the official `hashicorp/vault` image at a pinned tag (see `Dockerfile`). Vault's config is rendered at build time from the variables below, and the file storage backend lives on a Railway volume so secrets survive redeploys. TLS is terminated by Railway's edge; the listener itself is plain HTTP.
+
 ## ✨ Features
 
-- Hashicorp Vault
+- Official Vault 2.x image at a pinned tag
+- File storage backend on a persistent volume, ownership fixed on first boot
+- Optional dev mode (`ENV=dev`) with an in-memory backend and a preset root token
+- Built-in web UI at `/ui`, toggled by a variable
+- Lease TTLs and listener port configurable without touching the image
 
 ## 💁‍♀️ How to use
 
-- Click the Railway button 👆
-- Fill in the variables
-- Deploy! 🚄
+1. Click the Railway button 👆
+2. Fill in the variables (see below)
+3. Deploy! 🚄
+4. Open `https://<vault-domain>/ui` (or use `VAULT_ADDR=https://<vault-domain>` with the CLI), initialise Vault, store the unseal keys and root token safely, and unseal.
 
 ## 🧱 Infrastructure as Code
 
@@ -44,6 +60,22 @@ Link it to a project dedicated to this template. An apply deletes every resource
 every variable** the file does not declare, so from then on variables live in `railway.ts`,
 not the dashboard. Do not point it at a project created from the deploy button — the
 service names differ, and a mismatch is a delete and recreate, not a rename.
+
+## 🔧 Variables
+
+| Variable            | Required | Description                                                                                                                                               |
+| ------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENV`               | no       | `file` (default in the IaC file) uses the file backend on the volume. `dev` runs `vault server -dev`: in-memory, unsealed, every secret lost on redeploy. |
+| `PORT`              | no       | Listener port, default `8200`. Baked into the config at build time.                                                                                       |
+| `STORAGE_PATH`      | no       | Directory of the file backend, default `/vault/file`. Must be the volume's mount path.                                                                    |
+| `DEFAULT_LEASE_TTL` | no       | Default lease duration for tokens and secrets, default `168h`. Build-time.                                                                                |
+| `MAX_LEASE_TTL`     | no       | Maximum lease duration, default `720h`. Build-time.                                                                                                       |
+| `UI_ENABLED`        | no       | `true` (default in the IaC file) serves the web UI at `/ui`. Build-time.                                                                                  |
+| `DEV_ROOT_TOKEN_ID` | no       | Root token for `ENV=dev` only. Ignored otherwise. Generate one with `openssl rand -hex 16`.                                                               |
+
+`STORAGE_PATH`, `DEFAULT_LEASE_TTL`, `MAX_LEASE_TTL`, `UI_ENABLED` and `PORT` are read by
+`config.sh` at build time: Railway passes them as build args because the `Dockerfile`
+declares matching `ARG`s, so changing one needs a rebuild, not just a restart.
 
 ## ⚠️ Development mode
 

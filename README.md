@@ -2,7 +2,7 @@
 
 This example deploys a server of [Hashicorp Vault](https://www.hashicorp.com/products/vault).
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/hashicorp-vault)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/vOXRB-?referralCode=C3Uv6n&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 ## ✨ Features
 

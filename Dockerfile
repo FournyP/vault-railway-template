@@ -1,4 +1,4 @@
-FROM hashicorp/vault:2.1
+FROM hashicorp/vault:2.2
 
 # The official Vault 2.x images end with `USER vault`. The build steps below
 # need root, and the entrypoint drops privileges itself at runtime.

@@ -25,6 +25,11 @@
       "matchUpdateTypes": ["minor"],
       "matchCurrentVersion": "/^v?0\\./",
       "automerge": false
+    },
+    {
+      "description": "Upgrades migrate stored data one way, so a bad release cannot simply be rolled back. Needs a human.",
+      "matchPackageNames": ["hashicorp/vault"],
+      "automerge": false
     }
   ]
 }
